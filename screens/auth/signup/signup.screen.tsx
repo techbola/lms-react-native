@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import {
+  AntDesign,
   Entypo,
   FontAwesome,
   Fontisto,
@@ -30,15 +31,17 @@ import {
 import { useState } from "react";
 import { commonStyles } from "@/styles/common/common.styles";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import axios from "axios";
 import { SERVER_URI } from "@/utils/uri";
 import { Toast } from "react-native-toast-notifications";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function LoginScreen() {
+export default function SignUpScreen() {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [buttonSpinner, setButtonSpinner] = useState(false);
   const [userInfo, setUserInfo] = useState({
+    name: "",
     email: "",
     password: "",
   });
@@ -94,19 +97,32 @@ export default function LoginScreen() {
   };
 
   const handleSignIn = async () => {
+    setButtonSpinner(true);
     await axios
-      .post(`${SERVER_URI}/login`, {
+      .post(`${SERVER_URI}/registration`, {
+        name: userInfo.name,
         email: userInfo.email,
         password: userInfo.password,
       })
       .then(async (res) => {
-        await AsyncStorage.setItem("access_token", res.data.accessToken);
-        await AsyncStorage.setItem("refresh_token", res.data.refreshToken);
-        router.push("/(tabs)");
+        await AsyncStorage.setItem(
+          "activation_token",
+          res.data.activationToken
+        );
+        Toast.show(res.data.message, {
+          type: "success",
+        });
+        setUserInfo({
+          name: "",
+          email: "",
+          password: "",
+        });
+        setButtonSpinner(false);
+        router.push("/(routes)/verifyAccount");
       })
       .catch((error) => {
-        console.log(error);
-        Toast.show("Email or password is not correct!", {
+        setButtonSpinner(false);
+        Toast.show("Email already exist!", {
           type: "danger",
         });
       });
@@ -120,15 +136,32 @@ export default function LoginScreen() {
       <ScrollView>
         <Image
           style={styles.signInImage}
-          source={require("@/assets/sign-in/sign_in.png")}
+          source={require("@/assets/sign-in/signup.png")}
         />
         <Text style={[styles.welcomeText, { fontFamily: "Raleway_700Bold" }]}>
-          Welcome Back!
+          Let's get started!
         </Text>
         <Text style={styles.learningText}>
-          Login to your existing account of Becodemy
+          Create an account to Becodemy to get all features
         </Text>
         <View style={styles.inputContainer}>
+          <View>
+            <TextInput
+              style={[styles.input, { paddingLeft: 40, marginBottom: -12 }]}
+              keyboardType="default"
+              value={userInfo.name}
+              placeholder="shahriar sajeeb"
+              onChangeText={(value) =>
+                setUserInfo({ ...userInfo, name: value })
+              }
+            />
+            <AntDesign
+              style={{ position: "absolute", left: 26, top: 14 }}
+              name="user"
+              size={20}
+              color={"#A1A1A1"}
+            />
+          </View>
           <View>
             <TextInput
               style={[styles.input, { paddingLeft: 40 }]}
@@ -148,12 +181,9 @@ export default function LoginScreen() {
             {required && (
               <View style={commonStyles.errorContainer}>
                 <Entypo name="cross" size={18} color={"red"} />
-                <Text style={{ color: "red", fontSize: 11, marginTop: -1 }}>
-                  {required}
-                </Text>
               </View>
             )}
-            <View style={{ marginTop: 25 }}>
+            <View style={{ marginTop: 15 }}>
               <TextInput
                 style={commonStyles.input}
                 keyboardType="default"
@@ -191,18 +221,6 @@ export default function LoginScreen() {
                 </Text>
               </View>
             )}
-            <TouchableOpacity
-              onPress={() => router.push("/(routes)/forgot-password")}
-            >
-              <Text
-                style={[
-                  styles.forgotSection,
-                  { fontFamily: "Nunito_600SemiBold" },
-                ]}
-              >
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
 
             <TouchableOpacity
               style={{
@@ -225,7 +243,7 @@ export default function LoginScreen() {
                     fontFamily: "Raleway_700Bold",
                   }}
                 >
-                  Sign In
+                  Sign Up
                 </Text>
               )}
             </TouchableOpacity>
@@ -249,11 +267,9 @@ export default function LoginScreen() {
 
             <View style={styles.signupRedirect}>
               <Text style={{ fontSize: 18, fontFamily: "Raleway_600SemiBold" }}>
-                Don't have an account?
+                Already have an account?
               </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/(routes)/sign-up")}
-              >
+              <TouchableOpacity onPress={() => router.push("/(routes)/login")}>
                 <Text
                   style={{
                     fontSize: 18,
@@ -262,7 +278,7 @@ export default function LoginScreen() {
                     marginLeft: 5,
                   }}
                 >
-                  Sign Up
+                  Sign In
                 </Text>
               </TouchableOpacity>
             </View>
